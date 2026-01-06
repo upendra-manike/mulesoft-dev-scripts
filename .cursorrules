@@ -1,0 +1,86 @@
+# MuleSoft Developer Scripts - AI Agent Rules
+
+This repository contains production-ready scripts for solving common MuleSoft development and operations problems.
+
+## Available Scripts
+
+### config-validator/validate-properties.py
+**Purpose:** Validates MuleSoft project configuration files and property placeholders
+**Use when:** 
+- Property placeholders not resolving
+- Missing properties in mule-artifact.json
+- Configuration validation before deployment
+**Command:** `python validate-properties.py --project-path <path>`
+
+### runtime-diagnostics/mule-runtime-check.sh
+**Purpose:** Diagnoses MuleSoft runtime issues (Java version, ports, memory, classpath)
+**Use when:**
+- App not starting
+- Java version compatibility issues
+- Port conflicts
+- Memory problems
+**Command:** `./mule-runtime-check.sh <project-path>`
+
+### log-analyzer/analyze-logs.py
+**Purpose:** Analyzes MuleSoft logs for correlation IDs, errors, flooding patterns
+**Use when:**
+- Missing correlation IDs in logs
+- High error rates
+- Log flooding issues
+- Debugging production issues
+**Command:** `python analyze-logs.py <log-file> [--verbose]`
+
+### security-scanner/secret-scan.py
+**Purpose:** Scans MuleSoft projects for security vulnerabilities
+**Use when:**
+- Hardcoded secrets detection
+- TLS version validation
+- Insecure HTTP listeners
+- Security audit before deployment
+**Command:** `python secret-scan.py --path <project-path> [--fail-on high]`
+
+### api-validator/raml-vs-flow-check.py
+**Purpose:** Validates API configurations and contract mismatches
+**Use when:**
+- RAML/OpenAPI vs implementation mismatches
+- API listener validation
+- TLS/HTTPS configuration
+- CORS issues
+**Command:** `python raml-vs-flow-check.py --project-path <path>`
+
+### munit-analyzer/munit-coverage.py
+**Purpose:** Analyzes MUnit test coverage and quality
+**Use when:**
+- Low test coverage
+- Missing test assertions
+- Uncovered flows
+- Test quality assessment
+**Command:** `python munit-coverage.py --project-path <path>`
+
+## Example Projects
+
+Located in `examples/` directory:
+- `sample-mule-project/` - Clean project for testing
+- `sample-mule-project-with-issues/` - Project with intentional issues
+- `sample-logs/` - Sample log files for testing
+
+## Quick Test
+
+```bash
+cd examples && ./test-all-scripts.sh
+```
+
+## Output Formats
+
+All scripts support:
+- Text output (default)
+- JSON output (`--format json`) for CI/CD integration
+
+## Integration
+
+These scripts can be integrated into:
+- CI/CD pipelines
+- Pre-commit hooks
+- Automated testing
+- Deployment validation
+
