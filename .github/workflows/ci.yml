@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint-python:
+    name: Lint Python Scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      
+      - name: Install linting tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pylint
+      
+      - name: Lint config-validator
+        run: |
+          cd config-validator
+          flake8 validate-properties.py --max-line-length=120 --ignore=E501,W503 || true
+      
+      - name: Lint log-analyzer
+        run: |
+          cd log-analyzer
+          flake8 analyze-logs.py --max-line-length=120 --ignore=E501,W503 || true
+      
+      - name: Lint security-scanner
+        run: |
+          cd security-scanner
+          flake8 secret-scan.py --max-line-length=120 --ignore=E501,W503 || true
+      
+      - name: Lint api-validator
+        run: |
+          cd api-validator
+          flake8 raml-vs-flow-check.py --max-line-length=120 --ignore=E501,W503 || true
+      
+      - name: Lint munit-analyzer
+        run: |
+          cd munit-analyzer
+          flake8 munit-coverage.py --max-line-length=120 --ignore=E501,W503 || true
+
+  test-scripts:
+    name: Test Scripts
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        script:
+          - config-validator/validate-properties.py
+          - log-analyzer/analyze-logs.py
+          - security-scanner/secret-scan.py
+          - api-validator/raml-vs-flow-check.py
+          - munit-analyzer/munit-coverage.py
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      
+      - name: Test script help
+        run: |
+          python ${{ matrix.script }} --help || exit 1
+      
+      - name: Test script with invalid path
+        run: |
+          python ${{ matrix.script }} --project-path /nonexistent/path 2>&1 | grep -q "does not exist" || exit 1
+
+  test-shell-scripts:
+    name: Test Shell Scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Test runtime diagnostics script
+        run: |
+          cd runtime-diagnostics
+          bash mule-runtime-check.sh --help || exit 1
+
+  validate-readme:
+    name: Validate READMEs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Check main README exists
+        run: test -f README.md || exit 1
+      
+      - name: Check project READMEs exist
+        run: |
+          for dir in config-validator runtime-diagnostics log-analyzer security-scanner api-validator munit-analyzer; do
+            test -f "$dir/README.md" || exit 1
+          done
+

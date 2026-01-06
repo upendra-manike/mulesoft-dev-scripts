@@ -1,0 +1,69 @@
+name: Test with Example Projects
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run weekly on Sundays
+    - cron: '0 0 * * 0'
+
+jobs:
+  test-with-examples:
+    name: Test Scripts with Example Data
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      
+      - name: Create test MuleSoft project structure
+        run: |
+          mkdir -p test-project/src/main/mule
+          mkdir -p test-project/src/main/resources
+          
+          # Create mule-artifact.json
+          cat > test-project/mule-artifact.json <<EOF
+          {
+            "minMuleVersion": "4.5.0",
+            "name": "test-app"
+          }
+          EOF
+          
+          # Create properties file
+          cat > test-project/src/main/resources/application.properties <<EOF
+          api.base.url=http://localhost:8081
+          db.connection.string=jdbc:postgresql://localhost:5432/testdb
+          EOF
+          
+          # Create XML with placeholder
+          cat > test-project/src/main/mule/test-flow.xml <<EOF
+          <mule xmlns:http="http://www.mulesoft.org/schema/mule/http">
+            <flow name="test-flow">
+              <http:listener path="/api" config-ref="HTTP_Listener_config"/>
+              <logger message="API URL: \${api.base.url}"/>
+            </flow>
+          </mule>
+          EOF
+      
+      - name: Test config validator
+        run: |
+          cd config-validator
+          python validate-properties.py --project-path ../test-project || exit 1
+      
+      - name: Test security scanner
+        run: |
+          cd security-scanner
+          python secret-scan.py --path ../test-project --format json || exit 1
+      
+      - name: Test API validator
+        run: |
+          cd api-validator
+          python raml-vs-flow-check.py --project-path ../test-project --format json || exit 1
+      
+      - name: Test MUnit analyzer
+        run: |
+          cd munit-analyzer
+          python munit-coverage.py --project-path ../test-project --format json || exit 1
+
