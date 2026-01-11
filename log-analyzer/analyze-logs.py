@@ -273,8 +273,13 @@ def main():
     )
     parser.add_argument(
         'log_files',
-        nargs='+',
+        nargs='*',
         help='Log file(s) to analyze'
+    )
+    parser.add_argument(
+        '--project-path',
+        type=str,
+        help='Path to MuleSoft project root (will search for log files)'
     )
     parser.add_argument(
         '--check-correlation',
@@ -305,10 +310,47 @@ def main():
     
     args = parser.parse_args()
     
+    # Handle --project-path argument
+    log_files_to_analyze = []
+    if args.project_path:
+        project_path = Path(args.project_path)
+        if not project_path.exists():
+            error_msg = f"Error: Project path does not exist: {project_path}\n"
+            sys.stdout.write(error_msg)
+            sys.stdout.flush()
+            sys.exit(1)
+        
+        # Search for log files in common locations
+        log_locations = [
+            project_path / 'logs',
+            project_path / 'target' / 'logs',
+            project_path / '.mule' / 'logs',
+        ]
+        
+        for log_dir in log_locations:
+            if log_dir.exists() and log_dir.is_dir():
+                log_files_to_analyze.extend(log_dir.glob('*.log'))
+        
+        # If no logs found in common locations, check project root
+        if not log_files_to_analyze:
+            log_files_to_analyze.extend(project_path.glob('*.log'))
+    else:
+        # Use positional arguments
+        if not args.log_files:
+            parser.error("Either --project-path or log file(s) must be provided")
+        log_files_to_analyze = args.log_files
+    
+    if not log_files_to_analyze:
+        if args.project_path:
+            print(f"⚠️  Warning: No log files found in project path: {args.project_path}")
+            sys.exit(1)
+        else:
+            parser.error("No log files specified")
+    
     analyzer = LogAnalyzer()
     
     # Parse all log files
-    for log_file in args.log_files:
+    for log_file in log_files_to_analyze:
         log_path = Path(log_file)
         if not log_path.exists():
             print(f"❌ Error: Log file does not exist: {log_path}")

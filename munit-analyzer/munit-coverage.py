@@ -16,8 +16,9 @@ from datetime import datetime
 
 
 class MUnitAnalyzer:
-    def __init__(self, project_path: Path):
+    def __init__(self, project_path: Path, fail_on_no_tests: bool = False):
         self.project_path = Path(project_path).resolve()
+        self.fail_on_no_tests = fail_on_no_tests
         self.errors: List[str] = []
         self.warnings: List[str] = []
         self.test_files: List[Path] = []
@@ -124,7 +125,10 @@ class MUnitAnalyzer:
             return
 
         if not self.tests:
-            self.errors.append("No MUnit tests found")
+            if self.fail_on_no_tests:
+                self.errors.append("No MUnit tests found")
+            else:
+                self.warnings.append("No MUnit tests found")
             return
 
         coverage_percent = (len(self.stats['covered_flows']) / len(flow_names) * 100) if flow_names else 0
@@ -274,6 +278,11 @@ def main():
         default='text',
         help='Output format (default: text)'
     )
+    parser.add_argument(
+        '--fail-on-no-tests',
+        action='store_true',
+        help='Treat "No MUnit tests found" as an error (default: warning)'
+    )
     
     args = parser.parse_args()
     
@@ -282,7 +291,7 @@ def main():
         print(f"❌ Error: Project path does not exist: {project_path}")
         sys.exit(1)
     
-    analyzer = MUnitAnalyzer(project_path)
+    analyzer = MUnitAnalyzer(project_path, fail_on_no_tests=args.fail_on_no_tests)
     results = analyzer.analyze()
     
     if args.format == 'json':
