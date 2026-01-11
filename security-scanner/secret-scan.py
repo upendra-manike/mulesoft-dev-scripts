@@ -244,6 +244,12 @@ def main():
         help='Path to MuleSoft project root (default: current directory)'
     )
     parser.add_argument(
+        '--project-path',
+        type=str,
+        default=None,
+        help='Path to MuleSoft project root (alternative to --path)'
+    )
+    parser.add_argument(
         '--exclude',
         action='append',
         help='Pattern to exclude from scan (can be used multiple times)'
@@ -267,9 +273,13 @@ def main():
     
     args = parser.parse_args()
     
-    project_path = Path(args.path)
+    # Support both --path and --project-path (--project-path takes precedence)
+    project_path_str = args.project_path if args.project_path is not None else args.path
+    project_path = Path(project_path_str)
     if not project_path.exists():
-        print(f"❌ Error: Project path does not exist: {project_path}")
+        error_msg = f"Error: Project path does not exist: {project_path}\n"
+        sys.stdout.write(error_msg)
+        sys.stdout.flush()
         sys.exit(1)
     
     scanner = SecurityScanner(project_path)
